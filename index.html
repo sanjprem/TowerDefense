@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tower Defense Animation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        #gameCanvas {
+            border: 2px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const towerSize = 20;
+        const enemySize = 10;
+        const projectileSize = 5;
+
+        let towers = [
+            { x: 50, y: 200 },
+            { x: 200, y: 100 },
+            { x: 350, y: 300 }
+        ];
+
+        let enemies = [];
+        let projectiles = [];
+
+        function drawTower(x, y) {
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(x - towerSize / 2, y - towerSize / 2, towerSize, towerSize);
+        }
+
+        function drawEnemy(x, y) {
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(x, y, enemySize / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawProjectile(x, y) {
+            ctx.fillStyle = 'green';
+            ctx.beginPath();
+            ctx.arc(x, y, projectileSize / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function spawnEnemy() {
+            enemies.push({ x: 0, y: Math.random() * canvas.height });
+        }
+
+        function updateGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw and update towers
+            towers.forEach(tower => {
+                drawTower(tower.x, tower.y);
+                if (Math.random() < 0.02) { // 2% chance to shoot each frame
+                    projectiles.push({ x: tower.x, y: tower.y, target: null });
+                }
+            });
+
+            // Draw and update enemies
+            enemies = enemies.filter(enemy => {
+                enemy.x += 1;
+                drawEnemy(enemy.x, enemy.y);
+                return enemy.x < canvas.width;
+            });
+
+            // Draw and update projectiles
+            projectiles = projectiles.filter(projectile => {
+                if (!projectile.target) {
+                    projectile.target = enemies.find(enemy => 
+                        Math.hypot(enemy.x - projectile.x, enemy.y - projectile.y) < 100
+                    );
+                }
+
+                if (projectile.target) {
+                    let dx = projectile.target.x - projectile.x;
+                    let dy = projectile.target.y - projectile.y;
+                    let distance = Math.hypot(dx, dy);
+                    projectile.x += dx / distance * 2;
+                    projectile.y += dy / distance * 2;
+
+                    if (Math.hypot(projectile.target.x - projectile.x, projectile.target.y - projectile.y) < 5) {
+                        enemies = enemies.filter(e => e !== projectile.target);
+                        return false;
+                    }
+                }
+
+                drawProjectile(projectile.x, projectile.y);
+                return projectile.x >= 0 && projectile.x <= canvas.width && 
+                       projectile.y >= 0 && projectile.y <= canvas.height;
+            });
+
+            if (Math.random() < 0.02) { // 2% chance to spawn an enemy each frame
+                spawnEnemy();
+            }
+
+            requestAnimationFrame(updateGame);
+        }
+
+        updateGame();
+    </script>
+</body>
+</html>
